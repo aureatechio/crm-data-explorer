@@ -77,35 +77,35 @@ export default function ExportButton({ queryState, disabled }: ExportButtonProps
       <button
         onClick={() => setShowMenu(!showMenu)}
         disabled={disabled || isExporting}
-        className="flex items-center gap-1.5 bg-[var(--bg-tertiary)] hover:bg-[var(--border)] text-[var(--text-primary)] px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        className="inline-flex items-center gap-2 bg-[var(--md-surface-container)] hover:bg-[var(--md-surface-container-high)] text-[var(--md-on-surface)] px-4 py-2.5 rounded-full text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {isExporting ? (
           <>
-            <div className="w-3.5 h-3.5 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-[var(--md-primary)] border-t-transparent rounded-full animate-spin" />
             Exportando...
           </>
         ) : (
           <>
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-4 h-4" />
             Exportar
           </>
         )}
       </button>
 
       {showMenu && (
-        <div className="absolute top-full right-0 mt-1 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg shadow-xl z-50 animate-fade-in overflow-hidden">
+        <div className="absolute top-full right-0 mt-2 bg-[var(--md-surface)] rounded-xl overflow-hidden z-50 animate-fade-in min-w-[180px]" style={{ boxShadow: 'var(--md-elevation-2)' }}>
           <button
             onClick={() => doExport("csv")}
-            className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-3 text-sm text-[var(--md-on-surface)] hover:bg-[var(--md-surface-container-low)] transition-colors"
           >
-            <FileText className="w-4 h-4 text-[var(--success)]" />
+            <FileText className="w-5 h-5 text-[var(--md-success)]" />
             Exportar CSV
           </button>
           <button
             onClick={() => doExport("xlsx")}
-            className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-3 text-sm text-[var(--md-on-surface)] hover:bg-[var(--md-surface-container-low)] transition-colors"
           >
-            <FileSpreadsheet className="w-4 h-4 text-[var(--accent)]" />
+            <FileSpreadsheet className="w-5 h-5 text-[var(--md-primary)]" />
             Exportar XLSX
           </button>
         </div>

@@ -32,7 +32,7 @@ interface DataGridProps {
 }
 
 function formatCellValue(value: unknown): string {
-  if (value === null || value === undefined) return "—";
+  if (value === null || value === undefined) return "\u2014";
   if (typeof value === "boolean") return value ? "Sim" : "Nao";
   if (typeof value === "object") return JSON.stringify(value);
   if (typeof value === "string" && value.length > 100) return value.slice(0, 100) + "...";
@@ -56,7 +56,6 @@ export default function DataGrid({
   const columns: ColumnDef<Record<string, unknown>, unknown>[] = useMemo(() => {
     if (data.length === 0) return [];
 
-    // Get all unique keys from data (including nested objects from joins)
     const keys = new Set<string>();
     for (const row of data) {
       for (const key of Object.keys(row)) {
@@ -88,10 +87,10 @@ export default function DataGrid({
   return (
     <div className="flex flex-col h-full">
       {/* Table */}
-      <div className="flex-1 overflow-auto border border-[var(--border)] rounded-lg">
-        <table className="w-full text-xs">
+      <div className="flex-1 overflow-auto bg-[var(--md-surface)] rounded-xl" style={{ boxShadow: 'var(--md-elevation-1)' }}>
+        <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
-            <tr className="bg-[var(--bg-tertiary)]">
+            <tr className="bg-[var(--md-surface-container-low)]">
               {table.getHeaderGroups().map((headerGroup) =>
                 headerGroup.headers.map((header) => {
                   const colName = header.column.id;
@@ -100,10 +99,10 @@ export default function DataGrid({
                     <th
                       key={header.id}
                       onClick={() => onSort(colName)}
-                      className="px-3 py-2 text-left font-medium text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors whitespace-nowrap select-none border-b border-[var(--border)]"
+                      className="px-4 py-3 text-left font-medium text-[var(--md-on-surface-variant)] text-xs cursor-pointer hover:bg-[var(--md-surface-container)] transition-colors whitespace-nowrap select-none border-b border-[var(--md-outline-variant)]"
                     >
-                      <div className="flex items-center gap-1">
-                        <span className="font-mono text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono">
                           {flexRender(
                             header.column.columnDef.header,
                             header.getContext()
@@ -111,12 +110,12 @@ export default function DataGrid({
                         </span>
                         {isSorted ? (
                           orderDirection === "asc" ? (
-                            <ArrowUp className="w-3 h-3 text-[var(--accent)]" />
+                            <ArrowUp className="w-3.5 h-3.5 text-[var(--md-primary)]" />
                           ) : (
-                            <ArrowDown className="w-3 h-3 text-[var(--accent)]" />
+                            <ArrowDown className="w-3.5 h-3.5 text-[var(--md-primary)]" />
                           )
                         ) : (
-                          <ArrowUpDown className="w-3 h-3 opacity-30" />
+                          <ArrowUpDown className="w-3.5 h-3.5 opacity-20" />
                         )}
                       </div>
                     </th>
@@ -130,11 +129,11 @@ export default function DataGrid({
               <tr>
                 <td
                   colSpan={columns.length || 1}
-                  className="px-3 py-16 text-center text-[var(--text-muted)]"
+                  className="px-4 py-16 text-center text-[var(--md-on-surface-variant)]"
                 >
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-                    Consultando...
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-5 h-5 border-2 border-[var(--md-primary)] border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Consultando...</span>
                   </div>
                 </td>
               </tr>
@@ -142,23 +141,21 @@ export default function DataGrid({
               <tr>
                 <td
                   colSpan={columns.length || 1}
-                  className="px-3 py-16 text-center text-[var(--text-muted)]"
+                  className="px-4 py-16 text-center text-[var(--md-on-surface-variant)] text-sm"
                 >
                   Nenhum resultado encontrado
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row, i) => (
+              table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className={`border-b border-[var(--border)] hover:bg-[var(--bg-tertiary)] transition-colors ${
-                    i % 2 === 0 ? "bg-[var(--bg-secondary)]" : "bg-[var(--bg-primary)]"
-                  }`}
+                  className="border-b border-[var(--md-outline-variant)]/50 hover:bg-[var(--md-surface-container-low)] transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className="px-3 py-1.5 text-[var(--text-primary)] whitespace-nowrap max-w-xs truncate font-mono text-[11px]"
+                      className="px-4 py-2.5 text-[var(--md-on-surface)] whitespace-nowrap max-w-xs truncate font-mono text-xs"
                       title={String(cell.getValue() ?? "")}
                     >
                       {flexRender(
@@ -174,22 +171,22 @@ export default function DataGrid({
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between px-2 py-3 border-t border-[var(--border)]">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[var(--text-muted)]">
+      {/* Pagination - M3 style */}
+      <div className="flex items-center justify-between px-2 py-3">
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-[var(--md-on-surface-variant)]">
             {totalCount > 0
-              ? `${from.toLocaleString()}-${to.toLocaleString()} de ${totalCount.toLocaleString()}`
+              ? `${from.toLocaleString()}\u2013${to.toLocaleString()} de ${totalCount.toLocaleString()}`
               : "0 resultados"}
           </span>
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="bg-[var(--bg-primary)] border border-[var(--border)] rounded px-2 py-1 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+            className="bg-[var(--md-surface-container-low)] border border-[var(--md-outline-variant)] rounded-xl px-3 py-1.5 text-xs text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] focus:ring-1 focus:ring-[var(--md-primary)] transition-all"
           >
             {[25, 50, 100, 250].map((size) => (
               <option key={size} value={size}>
-                {size}/pag
+                {size} por pagina
               </option>
             ))}
           </select>
@@ -199,31 +196,31 @@ export default function DataGrid({
           <button
             onClick={() => onPageChange(0)}
             disabled={page === 0}
-            className="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-full text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronsLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => onPageChange(page - 1)}
             disabled={page === 0}
-            className="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-full text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-xs text-[var(--text-secondary)] px-2 tabular-nums">
+          <span className="text-sm text-[var(--md-on-surface)] px-3 font-medium tabular-nums">
             {page + 1} / {totalPages || 1}
           </span>
           <button
             onClick={() => onPageChange(page + 1)}
             disabled={page >= totalPages - 1}
-            className="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-full text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
           <button
             onClick={() => onPageChange(totalPages - 1)}
             disabled={page >= totalPages - 1}
-            className="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-2 rounded-full text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronsRight className="w-4 h-4" />
           </button>

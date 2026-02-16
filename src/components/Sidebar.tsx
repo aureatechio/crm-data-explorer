@@ -48,53 +48,59 @@ export default function Sidebar({ selectedTable, onSelectTable }: SidebarProps) 
   const totalTables = Object.values(groups).flat().length;
 
   return (
-    <aside className="w-72 min-w-72 h-screen flex flex-col bg-[var(--bg-secondary)] border-r border-[var(--border)]">
+    <aside className="w-72 min-w-72 h-screen flex flex-col bg-[var(--md-surface)] border-r border-[var(--md-outline-variant)]">
       {/* Header */}
-      <div className="p-4 border-b border-[var(--border)]">
-        <div className="flex items-center gap-2 mb-3">
-          <Database className="w-5 h-5 text-[var(--accent)]" />
-          <h1 className="text-sm font-semibold text-[var(--text-primary)]">
-            Data Explorer
-          </h1>
+      <div className="p-5 pb-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-9 h-9 bg-[var(--md-primary-container)] rounded-xl flex items-center justify-center">
+            <Database className="w-[18px] h-[18px] text-[var(--md-primary)]" />
+          </div>
+          <div>
+            <h1 className="text-base font-medium text-[var(--md-on-surface)] leading-tight">
+              Data Explorer
+            </h1>
+            <p className="text-[11px] text-[var(--md-on-surface-variant)]">
+              {totalTables} tabelas
+            </p>
+          </div>
         </div>
+
+        {/* M3 Search bar */}
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--md-on-surface-variant)]" />
           <input
             type="text"
             placeholder="Buscar tabela..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg pl-8 pr-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+            className="w-full bg-[var(--md-surface-container-low)] rounded-full pl-10 pr-4 py-2.5 text-sm text-[var(--md-on-surface)] placeholder:text-[var(--md-on-surface-variant)] focus:outline-none focus:ring-2 focus:ring-[var(--md-primary)] transition-all"
           />
         </div>
-        <p className="text-[10px] text-[var(--text-muted)] mt-2">
-          {totalTables} tabelas disponíveis
-        </p>
       </div>
 
       {/* Table list */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto px-3 pb-2">
         {Object.entries(filteredGroups).map(([group, tables]) => {
           const isExpanded = expandedGroups.has(group) || search.length > 0;
           return (
-            <div key={group} className="mb-1">
+            <div key={group} className="mb-0.5">
               <button
                 onClick={() => toggleGroup(group)}
-                className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-low)] transition-colors"
               >
                 {isExpanded ? (
-                  <ChevronDown className="w-3 h-3 shrink-0" />
+                  <ChevronDown className="w-4 h-4 shrink-0 text-[var(--md-on-surface-variant)]" />
                 ) : (
-                  <ChevronRight className="w-3 h-3 shrink-0" />
+                  <ChevronRight className="w-4 h-4 shrink-0 text-[var(--md-on-surface-variant)]" />
                 )}
                 <span className="truncate">{group}</span>
-                <span className="ml-auto text-[10px] text-[var(--text-muted)] tabular-nums">
+                <span className="ml-auto text-xs text-[var(--md-outline)] bg-[var(--md-surface-container)] px-2 py-0.5 rounded-full">
                   {tables.length}
                 </span>
               </button>
 
               {isExpanded && (
-                <div className="ml-2 animate-fade-in">
+                <div className="ml-2 space-y-0.5 animate-fade-in">
                   {tables.map((table) => {
                     const isSelected = table === selectedTable;
                     const joins = getJoinsForTable(table);
@@ -102,18 +108,18 @@ export default function Sidebar({ selectedTable, onSelectTable }: SidebarProps) 
                       <button
                         key={table}
                         onClick={() => onSelectTable(table)}
-                        className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-all ${
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all ${
                           isSelected
-                            ? "bg-[var(--accent)] text-white font-medium"
-                            : "text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
+                            ? "bg-[var(--md-primary-container)] text-[var(--md-on-primary-container)] font-medium"
+                            : "text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-low)]"
                         }`}
                       >
-                        <Table2 className="w-3 h-3 shrink-0 opacity-60" />
+                        <Table2 className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[var(--md-primary)]' : 'opacity-50'}`} />
                         <span className="truncate">{table}</span>
                         {joins.length > 0 && (
                           <Link
-                            className={`w-3 h-3 shrink-0 ml-auto ${
-                              isSelected ? "opacity-70" : "text-[var(--accent)] opacity-50"
+                            className={`w-3.5 h-3.5 shrink-0 ml-auto ${
+                              isSelected ? "text-[var(--md-primary)]" : "text-[var(--md-outline)] opacity-50"
                             }`}
                           />
                         )}
@@ -128,8 +134,8 @@ export default function Sidebar({ selectedTable, onSelectTable }: SidebarProps) 
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t border-[var(--border)]">
-        <p className="text-[10px] text-[var(--text-muted)] text-center">
+      <div className="px-5 py-3 border-t border-[var(--md-outline-variant)]">
+        <p className="text-xs text-[var(--md-outline)] text-center">
           AcelerAI CRM - Somente Leitura
         </p>
       </div>

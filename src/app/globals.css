@@ -1,62 +1,77 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --bg-card: #1e293b;
-  --border: #334155;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-light: #3b82f620;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  /* Material Design 3 - Light Theme (Google-style) */
+  --md-primary: #1a73e8;
+  --md-primary-hover: #1567d3;
+  --md-primary-container: #d3e3fd;
+  --md-on-primary: #ffffff;
+  --md-on-primary-container: #041e49;
+
+  --md-surface: #ffffff;
+  --md-surface-dim: #f8fafd;
+  --md-surface-container-lowest: #ffffff;
+  --md-surface-container-low: #f1f3f6;
+  --md-surface-container: #eceef1;
+  --md-surface-container-high: #e6e8eb;
+  --md-surface-container-highest: #e0e2e6;
+
+  --md-on-surface: #1f1f1f;
+  --md-on-surface-variant: #444746;
+  --md-outline: #747775;
+  --md-outline-variant: #c4c7c5;
+
+  --md-error: #d93025;
+  --md-error-container: #fce8e6;
+  --md-success: #1e8e3e;
+  --md-success-container: #e6f4ea;
+  --md-warning: #f9ab00;
+
+  --md-elevation-1: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+  --md-elevation-2: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15);
+  --md-elevation-3: 0 4px 8px 3px rgba(60,64,67,0.15), 0 1px 3px rgba(60,64,67,0.3);
+
+  --font-sans: "Google Sans", "Roboto", system-ui, -apple-system, sans-serif;
+  --font-mono: "Roboto Mono", "JetBrains Mono", monospace;
 }
 
 @theme inline {
-  --color-bg-primary: var(--bg-primary);
-  --color-bg-secondary: var(--bg-secondary);
-  --color-bg-tertiary: var(--bg-tertiary);
-  --color-bg-card: var(--bg-card);
-  --color-border: var(--border);
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --color-accent-light: var(--accent-light);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
+  --color-md-primary: var(--md-primary);
+  --color-md-primary-container: var(--md-primary-container);
+  --color-md-surface: var(--md-surface);
+  --color-md-surface-dim: var(--md-surface-dim);
+  --color-md-surface-container: var(--md-surface-container);
+  --color-md-surface-container-low: var(--md-surface-container-low);
+  --color-md-surface-container-high: var(--md-surface-container-high);
+  --color-md-on-surface: var(--md-on-surface);
+  --color-md-on-surface-variant: var(--md-on-surface-variant);
+  --color-md-outline: var(--md-outline);
+  --color-md-outline-variant: var(--md-outline-variant);
+  --color-md-error: var(--md-error);
+  --color-md-success: var(--md-success);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--bg-tertiary) transparent;
+  scrollbar-color: var(--md-outline-variant) transparent;
 }
 
 body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--md-surface-dim);
+  color: var(--md-on-surface);
   font-family: var(--font-sans);
 }
 
 ::selection {
-  background: var(--accent);
-  color: white;
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
 }
 
 input, select, textarea {
   font-family: inherit;
 }
 
-/* Animations */
+/* Material Design 3 Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -67,15 +82,42 @@ input, select, textarea {
   to { opacity: 1; transform: translateX(0); }
 }
 
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+@keyframes ripple {
+  to { transform: scale(4); opacity: 0; }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .animate-slide-in {
-  animation: slideIn 0.2s ease-out;
+  animation: slideIn 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* M3 Focus ring */
+.md-focus:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* M3 State layer */
+.md-state-layer {
+  position: relative;
+}
+.md-state-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  background: currentColor;
+  transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+  pointer-events: none;
+}
+.md-state-layer:hover::after {
+  opacity: 0.08;
+}
+.md-state-layer:active::after {
+  opacity: 0.12;
 }

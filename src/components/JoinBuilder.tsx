@@ -24,14 +24,14 @@ export default function JoinBuilder({
   const usedTables = new Set(joins.map((j) => `${j.fromColumn}-${j.toTable}`));
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-1.5">
-        <Link2 className="w-3.5 h-3.5 text-[var(--accent)]" />
-        <span className="text-xs font-medium text-[var(--text-secondary)]">
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2 shrink-0">
+        <Link2 className="w-4 h-4 text-[var(--md-primary)]" />
+        <span className="text-sm font-medium text-[var(--md-on-surface)]">
           Joins
         </span>
         {joins.length > 0 && (
-          <span className="text-[10px] bg-[var(--success)] text-white px-1.5 py-0.5 rounded-full">
+          <span className="text-xs bg-[var(--md-success)] text-white px-2 py-0.5 rounded-full font-medium">
             {joins.length}
           </span>
         )}
@@ -41,27 +41,27 @@ export default function JoinBuilder({
       {joins.map((join) => (
         <div
           key={join.id}
-          className="flex items-center gap-2 bg-[var(--accent-light)] border border-[var(--accent)]/20 rounded-md px-2 py-1.5 animate-fade-in"
+          className="flex items-center gap-2 bg-[var(--md-primary-container)] rounded-xl px-3 py-2.5 animate-fade-in"
         >
-          <Link2 className="w-3 h-3 text-[var(--accent)] shrink-0" />
-          <span className="text-xs text-[var(--text-primary)] truncate">
-            <span className="font-mono text-[var(--accent)]">
+          <Link2 className="w-4 h-4 text-[var(--md-primary)] shrink-0" />
+          <span className="text-xs text-[var(--md-on-primary-container)] truncate">
+            <span className="font-mono text-[var(--md-primary)] font-medium">
               {join.fromColumn}
             </span>
-            <span className="text-[var(--text-muted)] mx-1">&rarr;</span>
+            <span className="text-[var(--md-on-surface-variant)] mx-1.5">&rarr;</span>
             <span className="font-mono font-medium">{join.toTable}</span>
           </span>
           <button
             onClick={() => onRemoveJoin(join.id)}
-            className="ml-auto p-0.5 text-[var(--text-muted)] hover:text-[var(--danger)] transition-colors shrink-0"
+            className="ml-auto p-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-error)] hover:bg-[var(--md-error-container)] rounded-full transition-colors shrink-0"
           >
-            <X className="w-3 h-3" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       ))}
 
       {/* Available joins */}
-      <div className="space-y-0.5">
+      <div className="flex-1 overflow-y-auto min-h-0 space-y-0.5">
         {availableJoins
           .filter((j) => !usedTables.has(`${j.column}-${j.foreignTable}`))
           .map((join) => (
@@ -76,11 +76,11 @@ export default function JoinBuilder({
                   selectedColumns: [],
                 })
               }
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-low)] transition-colors"
             >
-              <Plus className="w-3 h-3 shrink-0" />
+              <Plus className="w-3.5 h-3.5 shrink-0" />
               <span className="font-mono text-[11px]">{join.column}</span>
-              <span className="text-[var(--text-muted)]">&rarr;</span>
+              <span className="text-[var(--md-outline)]">&rarr;</span>
               <span className="font-mono text-[11px] font-medium">
                 {join.foreignTable}
               </span>

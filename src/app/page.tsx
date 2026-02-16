@@ -25,6 +25,7 @@ import {
   ChevronUp,
   Lock,
   Eye,
+  Shield,
 } from "lucide-react";
 
 export default function Home() {
@@ -224,95 +225,108 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryState.page, queryState.pageSize, queryState.orderBy, queryState.orderDirection]);
 
-  // Login screen
+  // Login screen - M3 style
   if (!isAuthenticated) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[var(--bg-primary)]">
-        <div className="w-full max-w-sm p-8 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border)] shadow-2xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-[var(--accent-light)] rounded-lg">
-              <Lock className="w-5 h-5 text-[var(--accent)]" />
+      <div className="h-screen flex items-center justify-center bg-[var(--md-surface-dim)]">
+        <div className="w-full max-w-sm p-8 bg-[var(--md-surface)] rounded-3xl" style={{ boxShadow: 'var(--md-elevation-3)' }}>
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="w-12 h-12 bg-[var(--md-primary-container)] rounded-2xl flex items-center justify-center mb-4">
+              <Lock className="w-6 h-6 text-[var(--md-primary)]" />
             </div>
-            <div>
-              <h1 className="text-lg font-semibold text-[var(--text-primary)]">
-                CRM Data Explorer
-              </h1>
-              <p className="text-xs text-[var(--text-muted)]">
-                AcelerAI - Acesso restrito
-              </p>
-            </div>
+            <h1 className="text-[22px] font-normal text-[var(--md-on-surface)]">
+              CRM Data Explorer
+            </h1>
+            <p className="text-sm text-[var(--md-on-surface-variant)] mt-1">
+              AcelerAI - Acesso restrito
+            </p>
           </div>
 
-          <div className="space-y-3">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              placeholder="Senha de acesso"
-              className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-              autoFocus
-            />
+          <div className="space-y-4">
+            <div className="relative">
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                placeholder=" "
+                id="password-input"
+                className="peer w-full bg-[var(--md-surface-container-low)] border border-[var(--md-outline-variant)] rounded-xl px-4 pt-5 pb-2 text-sm text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] focus:border-2 transition-all"
+                autoFocus
+              />
+              <label
+                htmlFor="password-input"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-[var(--md-on-surface-variant)] transition-all pointer-events-none peer-focus:top-2.5 peer-focus:translate-y-0 peer-focus:text-xs peer-focus:text-[var(--md-primary)] peer-[:not(:placeholder-shown)]:top-2.5 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-xs"
+              >
+                Senha de acesso
+              </label>
+            </div>
+
             {authError && (
-              <p className="text-xs text-[var(--danger)] flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                {authError}
-              </p>
+              <div className="flex items-center gap-2 px-3 py-2 bg-[var(--md-error-container)] rounded-xl">
+                <AlertCircle className="w-4 h-4 text-[var(--md-error)]" />
+                <p className="text-xs text-[var(--md-error)]">{authError}</p>
+              </div>
             )}
+
             <button
               onClick={handleLogin}
-              className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white py-3 rounded-lg text-sm font-medium transition-colors"
+              className="w-full bg-[var(--md-primary)] hover:bg-[var(--md-primary-hover)] text-[var(--md-on-primary)] py-3 rounded-full text-sm font-medium transition-all active:scale-[0.98]"
+              style={{ boxShadow: 'var(--md-elevation-1)' }}
             >
               Entrar
             </button>
           </div>
 
-          <p className="text-[10px] text-[var(--text-muted)] text-center mt-4">
-            Acesso somente leitura ao banco de dados
-          </p>
+          <div className="flex items-center justify-center gap-1.5 mt-6">
+            <Shield className="w-3.5 h-3.5 text-[var(--md-on-surface-variant)]" />
+            <p className="text-xs text-[var(--md-on-surface-variant)]">
+              Acesso somente leitura ao banco de dados
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex overflow-hidden">
+    <div className="h-screen flex overflow-hidden bg-[var(--md-surface-dim)]">
       <Sidebar
         selectedTable={queryState.table}
         onSelectTable={handleSelectTable}
       />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top bar */}
-        <header className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)] bg-[var(--bg-secondary)]">
-          <Database className="w-4 h-4 text-[var(--accent)]" />
-          <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+        {/* Top bar - M3 style */}
+        <header className="flex items-center gap-3 px-6 py-3 bg-[var(--md-surface)] border-b border-[var(--md-outline-variant)]">
+          <Database className="w-5 h-5 text-[var(--md-primary)]" />
+          <h2 className="text-base font-medium text-[var(--md-on-surface)]">
             {queryState.table || "Selecione uma tabela"}
           </h2>
 
           {result.count > 0 && (
-            <div className="flex items-center gap-3 ml-4">
-              <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
-                <Rows3 className="w-3 h-3" />
+            <div className="flex items-center gap-3 ml-3">
+              <span className="inline-flex items-center gap-1.5 text-xs text-[var(--md-on-surface-variant)] bg-[var(--md-surface-container-low)] px-3 py-1 rounded-full">
+                <Rows3 className="w-3.5 h-3.5" />
                 {result.count.toLocaleString()} registros
               </span>
-              <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
-                <Clock className="w-3 h-3" />
+              <span className="inline-flex items-center gap-1.5 text-xs text-[var(--md-on-surface-variant)] bg-[var(--md-surface-container-low)] px-3 py-1 rounded-full">
+                <Clock className="w-3.5 h-3.5" />
                 {result.executionTime.toFixed(0)}ms
               </span>
             </div>
           )}
 
           {result.error && (
-            <span className="flex items-center gap-1 text-xs text-[var(--danger)] ml-4">
-              <AlertCircle className="w-3 h-3" />
+            <div className="flex items-center gap-1.5 text-xs text-[var(--md-error)] bg-[var(--md-error-container)] px-3 py-1 rounded-full ml-3">
+              <AlertCircle className="w-3.5 h-3.5" />
               {result.error}
-            </span>
+            </div>
           )}
 
-          <div className="ml-auto flex items-center gap-2">
-            <span className="flex items-center gap-1 text-[10px] text-[var(--text-muted)] bg-[var(--bg-primary)] px-2 py-1 rounded-full">
-              <Eye className="w-3 h-3" />
+          <div className="ml-auto flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--md-on-surface-variant)] bg-[var(--md-surface-container)] px-3 py-1.5 rounded-full font-medium">
+              <Eye className="w-3.5 h-3.5" />
               READ ONLY
             </span>
 
@@ -324,40 +338,41 @@ export default function Home() {
             <button
               onClick={handleExecuteQuery}
               disabled={!queryState.table || isLoading}
-              className="flex items-center gap-1.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 bg-[var(--md-primary)] hover:bg-[var(--md-primary-hover)] text-[var(--md-on-primary)] px-5 py-2.5 rounded-full text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97]"
+              style={{ boxShadow: 'var(--md-elevation-1)' }}
             >
               {isLoading ? (
-                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
-                <Play className="w-3.5 h-3.5" />
+                <Play className="w-4 h-4" />
               )}
               Consultar
             </button>
           </div>
         </header>
 
-        {/* Config panel (collapsible) */}
+        {/* Config panel */}
         {queryState.table && (
-          <div className="border-b border-[var(--border)] bg-[var(--bg-secondary)]">
+          <div className="bg-[var(--md-surface)]">
             <button
               onClick={() => setShowConfig(!showConfig)}
-              className="w-full flex items-center gap-1.5 px-4 py-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+              className="w-full flex items-center gap-2 px-6 py-2 text-sm text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-low)] transition-colors"
             >
               {showConfig ? (
-                <ChevronUp className="w-3 h-3" />
+                <ChevronUp className="w-4 h-4" />
               ) : (
-                <ChevronDown className="w-3 h-3" />
+                <ChevronDown className="w-4 h-4" />
               )}
               {showConfig ? "Ocultar configuracao" : "Mostrar configuracao"}
               {(queryState.filters.length > 0 || queryState.joins.length > 0) && (
-                <span className="text-[10px] bg-[var(--accent)] text-white px-1.5 rounded-full">
-                  {queryState.filters.length + queryState.joins.length} ativos
+                <span className="text-xs bg-[var(--md-primary)] text-[var(--md-on-primary)] px-2 py-0.5 rounded-full font-medium">
+                  {queryState.filters.length + queryState.joins.length}
                 </span>
               )}
             </button>
 
             {showConfig && (
-              <div className="px-4 pb-4 grid grid-cols-3 gap-4 animate-fade-in">
+              <div className="px-6 pb-3 pt-1 grid grid-cols-3 gap-6 animate-fade-in border-b border-[var(--md-outline-variant)] [&>*]:max-h-48 [&>*]:overflow-hidden [&>*]:flex [&>*]:flex-col">
                 <ColumnSelector
                   columns={columns}
                   selectedColumns={queryState.selectedColumns}
@@ -388,12 +403,14 @@ export default function Home() {
           {!queryState.table ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
-                <Database className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3 opacity-30" />
-                <p className="text-sm text-[var(--text-muted)]">
-                  Selecione uma tabela na sidebar para comecar
+                <div className="w-16 h-16 bg-[var(--md-surface-container)] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Database className="w-8 h-8 text-[var(--md-on-surface-variant)] opacity-50" />
+                </div>
+                <p className="text-base text-[var(--md-on-surface-variant)]">
+                  Selecione uma tabela para comecar
                 </p>
-                <p className="text-xs text-[var(--text-muted)] mt-1 opacity-60">
-                  80+ tabelas disponiveis agrupadas por dominio
+                <p className="text-sm text-[var(--md-outline)] mt-1">
+                  Escolha na barra lateral ao lado
                 </p>
               </div>
             </div>
