@@ -21,9 +21,9 @@ import {
   Database,
   AlertCircle,
   Rows3,
-  ChevronDown,
-  ChevronUp,
   Eye,
+  X,
+  SlidersHorizontal,
 } from "lucide-react";
 
 export default function Home() {
@@ -208,7 +208,7 @@ export default function Home() {
         onSelectTable={handleSelectTable}
       />
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Top bar - M3 style */}
         <header className="flex items-center gap-3 px-6 py-3 bg-[var(--md-surface)] border-b border-[var(--md-outline-variant)]">
           <Database className="w-5 h-5 text-[var(--md-primary)]" />
@@ -242,6 +242,25 @@ export default function Home() {
               READ ONLY
             </span>
 
+            {queryState.table && (
+              <button
+                onClick={() => setShowConfig(!showConfig)}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all ${
+                  showConfig
+                    ? "bg-[var(--md-primary-container)] text-[var(--md-on-primary-container)]"
+                    : "text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-low)]"
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Configurar
+                {(queryState.filters.length > 0 || queryState.joins.length > 0) && (
+                  <span className="text-[10px] bg-[var(--md-primary)] text-[var(--md-on-primary)] w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                    {queryState.filters.length + queryState.joins.length}
+                  </span>
+                )}
+              </button>
+            )}
+
             <ExportButton
               queryState={queryState}
               disabled={!queryState.table || result.count === 0}
@@ -263,28 +282,24 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Config panel */}
-        {queryState.table && (
-          <div className="bg-[var(--md-surface)]">
-            <button
-              onClick={() => setShowConfig(!showConfig)}
-              className="w-full flex items-center gap-2 px-6 py-2 text-sm text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-low)] transition-colors"
+        {/* Config panel - floating overlay */}
+        {queryState.table && showConfig && (
+          <div className="absolute top-0 left-0 right-0 bottom-0 z-40" onClick={() => setShowConfig(false)}>
+            <div
+              className="absolute top-14 left-4 right-4 bg-[var(--md-surface)] rounded-2xl border border-[var(--md-outline-variant)] animate-fade-in"
+              style={{ boxShadow: 'var(--md-elevation-3, 0 6px 10px 0 rgba(0,0,0,.14), 0 1px 18px 0 rgba(0,0,0,.12), 0 3px 5px -1px rgba(0,0,0,.2))' }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {showConfig ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-              {showConfig ? "Ocultar configuracao" : "Mostrar configuracao"}
-              {(queryState.filters.length > 0 || queryState.joins.length > 0) && (
-                <span className="text-xs bg-[var(--md-primary)] text-[var(--md-on-primary)] px-2 py-0.5 rounded-full font-medium">
-                  {queryState.filters.length + queryState.joins.length}
-                </span>
-              )}
-            </button>
-
-            {showConfig && (
-              <div className="px-6 pb-3 pt-1 grid grid-cols-3 gap-6 animate-fade-in border-b border-[var(--md-outline-variant)] [&>*]:max-h-48 [&>*]:overflow-hidden [&>*]:flex [&>*]:flex-col">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--md-outline-variant)]">
+                <span className="text-sm font-medium text-[var(--md-on-surface)]">Configuracao</span>
+                <button
+                  onClick={() => setShowConfig(false)}
+                  className="p-1.5 text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-low)] rounded-full transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="px-5 py-4 grid grid-cols-3 gap-6 [&>*]:max-h-52 [&>*]:overflow-hidden [&>*]:flex [&>*]:flex-col">
                 <ColumnSelector
                   columns={columns}
                   selectedColumns={queryState.selectedColumns}
@@ -307,7 +322,7 @@ export default function Home() {
                   onRemoveJoin={removeJoin}
                 />
               </div>
-            )}
+            </div>
           </div>
         )}
 
