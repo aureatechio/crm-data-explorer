@@ -1,5 +1,42 @@
 import { supabase } from "./supabase";
 import type { QueryState, QueryResult, ColumnMeta } from "./types";
+import { FK_LOOKUPS } from "./schema";
+
+export interface LookupOption {
+  id: string;
+  label: string;
+}
+
+// Cache de lookups para evitar re-fetch
+const lookupCache: Record<string, LookupOption[]> = {};
+
+export async function fetchLookupOptions(tableName: string, column: string): Promise<LookupOption[]> {
+  const cacheKey = `${tableName}.${column}`;
+  if (lookupCache[cacheKey]) return lookupCache[cacheKey];
+
+  const lookup = FK_LOOKUPS[tableName]?.[column];
+  if (!lookup) return [];
+
+  const { data, error } = await supabase
+    .from(lookup.table)
+    .select(`id,${lookup.nameField}`)
+    .order(lookup.nameField, { ascending: true });
+
+  if (error || !data) return [];
+
+  const rows = data as unknown as Record<string, unknown>[];
+  const options = rows.map((row) => ({
+    id: String(row.id),
+    label: String(row[lookup.nameField] || ""),
+  }));
+
+  lookupCache[cacheKey] = options;
+  return options;
+}
+
+export function hasLookup(tableName: string, column: string): boolean {
+  return !!FK_LOOKUPS[tableName]?.[column];
+}
 
 export async function fetchTableColumns(tableName: string): Promise<ColumnMeta[]> {
   const { data, error } = await supabase.from(tableName).select("*").limit(0);

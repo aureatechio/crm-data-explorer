@@ -293,6 +293,7 @@ export default function Home() {
                   onDeselectAll={deselectAllColumns}
                 />
                 <FilterPanel
+                  tableName={queryState.table}
                   filters={queryState.filters}
                   columns={columns}
                   onAddFilter={addFilter}

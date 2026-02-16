@@ -141,3 +141,13 @@ export function getGroupedTables(): Record<string, string[]> {
 export function getJoinsForTable(tableName: string) {
   return KNOWN_JOINS[tableName] || [];
 }
+
+// Colunas FK que tem lookup por nome (coluna -> { tabela, campoNome })
+export const FK_LOOKUPS: Record<string, Record<string, { table: string; nameField: string }>> = {
+  leads: {
+    etapa: { table: "etapa", nameField: "name" },
+    funil: { table: "funil", nameField: "nome" },
+  },
+  compras: {},
+  bloqueiosCelebridades: {},
+};

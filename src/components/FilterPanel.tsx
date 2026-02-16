@@ -1,10 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Plus, X, Filter as FilterIcon } from "lucide-react";
 import type { Filter, FilterOperator, ColumnMeta } from "@/lib/types";
 import { OPERATOR_LABELS, getOperatorsForType } from "@/lib/types";
+import { fetchLookupOptions, hasLookup, type LookupOption } from "@/lib/query-engine";
 
 interface FilterPanelProps {
+  tableName: string;
   filters: Filter[];
   columns: ColumnMeta[];
   onAddFilter: () => void;
@@ -12,7 +15,41 @@ interface FilterPanelProps {
   onUpdateFilter: (id: string, field: keyof Filter, value: string) => void;
 }
 
+function LookupSelect({
+  tableName,
+  column,
+  value,
+  onChange,
+}: {
+  tableName: string;
+  column: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [options, setOptions] = useState<LookupOption[]>([]);
+
+  useEffect(() => {
+    fetchLookupOptions(tableName, column).then(setOptions);
+  }, [tableName, column]);
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="flex-1 min-w-0 bg-[var(--md-surface-container-low)] border border-[var(--md-outline-variant)] rounded-xl px-3 py-2 text-xs text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] focus:ring-1 focus:ring-[var(--md-primary)] transition-all"
+    >
+      <option value="">Selecione...</option>
+      {options.map((opt) => (
+        <option key={opt.id} value={opt.id}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 export default function FilterPanel({
+  tableName,
   filters,
   columns,
   onAddFilter,
@@ -44,9 +81,12 @@ export default function FilterPanel({
 
       {filters.map((filter) => {
         const col = columns.find((c) => c.name === filter.column);
-        const operators = col
-          ? getOperatorsForType(col.data_type)
-          : getOperatorsForType("text");
+        const isLookup = hasLookup(tableName, filter.column);
+        const operators = isLookup
+          ? (["eq", "neq", "is_null", "is_not_null"] as FilterOperator[])
+          : col
+            ? getOperatorsForType(col.data_type)
+            : getOperatorsForType("text");
         const needsValue =
           filter.operator !== "is_null" && filter.operator !== "is_not_null";
 
@@ -65,7 +105,7 @@ export default function FilterPanel({
               <option value="">Coluna...</option>
               {columns.map((c) => (
                 <option key={c.name} value={c.name}>
-                  {c.name}
+                  {c.name}{hasLookup(tableName, c.name) ? " (nome)" : ""}
                 </option>
               ))}
             </select>
@@ -84,7 +124,14 @@ export default function FilterPanel({
               ))}
             </select>
 
-            {needsValue && (
+            {needsValue && isLookup ? (
+              <LookupSelect
+                tableName={tableName}
+                column={filter.column}
+                value={filter.value}
+                onChange={(v) => onUpdateFilter(filter.id, "value", v)}
+              />
+            ) : needsValue ? (
               <input
                 type="text"
                 value={filter.value}
@@ -94,7 +141,7 @@ export default function FilterPanel({
                 placeholder="Valor..."
                 className="flex-1 min-w-0 bg-[var(--md-surface-container-low)] border border-[var(--md-outline-variant)] rounded-xl px-3 py-2 text-xs text-[var(--md-on-surface)] placeholder:text-[var(--md-on-surface-variant)] focus:outline-none focus:border-[var(--md-primary)] focus:ring-1 focus:ring-[var(--md-primary)] transition-all"
               />
-            )}
+            ) : null}
 
             <button
               onClick={() => onRemoveFilter(filter.id)}
