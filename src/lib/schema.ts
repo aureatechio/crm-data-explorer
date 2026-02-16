@@ -29,6 +29,8 @@ const TABLE_GROUPS: Record<string, string[]> = {
 // Relacoes conhecidas entre tabelas (FKs principais)
 export const KNOWN_JOINS: Record<string, { column: string; foreignTable: string; foreignColumn: string }[]> = {
   leads: [
+    { column: "etapa", foreignTable: "etapa", foreignColumn: "id" },
+    { column: "funil", foreignTable: "funil", foreignColumn: "id" },
     { column: "vendedorResponsavel", foreignTable: "vendedores", foreignColumn: "id" },
     { column: "segmento", foreignTable: "segmentos", foreignColumn: "id" },
     { column: "subsegmento", foreignTable: "subsegmento", foreignColumn: "id" },
