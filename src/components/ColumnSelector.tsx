@@ -76,29 +76,42 @@ export default function ColumnSelector({
           const isSelected =
             allSelected || selectedColumns.includes(col.name);
           return (
-            <button
-              key={col.name}
-              onClick={() => onToggleColumn(col.name)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-colors ${
-                isSelected
-                  ? "text-[var(--md-on-surface)] bg-[var(--md-primary-container)]/40"
-                  : "text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-low)]"
-              }`}
-            >
-              <div
-                className={`w-[18px] h-[18px] rounded-[4px] border-2 flex items-center justify-center shrink-0 transition-colors ${
+            <div key={col.name} className="md-tooltip-wrap">
+              <button
+                onClick={() => onToggleColumn(col.name)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-colors ${
                   isSelected
-                    ? "bg-[var(--md-primary)] border-[var(--md-primary)]"
-                    : "border-[var(--md-outline)]"
+                    ? "text-[var(--md-on-surface)] bg-[var(--md-primary-container)]/40"
+                    : "text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-low)]"
                 }`}
               >
-                {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-              </div>
-              <span className="truncate font-mono text-[11px]">{col.name}</span>
-              <span className="ml-auto text-[10px] text-[var(--md-outline)] shrink-0 bg-[var(--md-surface-container)] px-1.5 py-0.5 rounded">
-                {col.data_type}
-              </span>
-            </button>
+                <div
+                  className={`w-[18px] h-[18px] rounded-[4px] border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    isSelected
+                      ? "bg-[var(--md-primary)] border-[var(--md-primary)]"
+                      : "border-[var(--md-outline)]"
+                  }`}
+                >
+                  {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                </div>
+                <span className="truncate font-mono text-[11px]">{col.name}</span>
+                <span className="ml-auto text-[10px] text-[var(--md-outline)] shrink-0 bg-[var(--md-surface-container)] px-1.5 py-0.5 rounded">
+                  {col.data_type}
+                </span>
+              </button>
+              <dl className="md-tooltip">
+                <dt>Coluna</dt>
+                <dd>{col.name}</dd>
+                <dt>Tipo</dt>
+                <dd>{col.data_type}</dd>
+                {col.format && col.format !== col.data_type && (
+                  <>
+                    <dt>Formato</dt>
+                    <dd>{col.format}</dd>
+                  </>
+                )}
+              </dl>
+            </div>
           );
         })}
       </div>

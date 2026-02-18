@@ -4,7 +4,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import Sidebar from "@/components/Sidebar";
 import FilterPanel from "@/components/FilterPanel";
 import ColumnSelector from "@/components/ColumnSelector";
-import JoinBuilder from "@/components/JoinBuilder";
+// JoinBuilder hidden from UI
+// import JoinBuilder from "@/components/JoinBuilder";
 import DataGrid from "@/components/DataGrid";
 import ExportButton from "@/components/ExportButton";
 import { executeQuery, fetchTableColumns } from "@/lib/query-engine";
@@ -253,9 +254,9 @@ export default function Home() {
               >
                 <SlidersHorizontal className="w-4 h-4" />
                 Configurar
-                {(queryState.filters.length > 0 || queryState.joins.length > 0) && (
+                {queryState.filters.length > 0 && (
                   <span className="text-[10px] bg-[var(--md-primary)] text-[var(--md-on-primary)] w-5 h-5 rounded-full flex items-center justify-center font-medium">
-                    {queryState.filters.length + queryState.joins.length}
+                    {queryState.filters.length}
                   </span>
                 )}
               </button>
@@ -299,7 +300,7 @@ export default function Home() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="px-5 py-4 grid grid-cols-3 gap-6 [&>*]:max-h-52 [&>*]:overflow-hidden [&>*]:flex [&>*]:flex-col">
+              <div className="px-5 py-4 grid grid-cols-2 gap-6 [&>*]:max-h-52 [&>*]:overflow-hidden [&>*]:flex [&>*]:flex-col">
                 <ColumnSelector
                   columns={columns}
                   selectedColumns={queryState.selectedColumns}
@@ -314,12 +315,6 @@ export default function Home() {
                   onAddFilter={addFilter}
                   onRemoveFilter={removeFilter}
                   onUpdateFilter={updateFilter}
-                />
-                <JoinBuilder
-                  tableName={queryState.table}
-                  joins={queryState.joins}
-                  onAddJoin={addJoin}
-                  onRemoveJoin={removeJoin}
                 />
               </div>
             </div>
