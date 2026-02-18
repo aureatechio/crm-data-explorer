@@ -142,6 +142,154 @@ export function getJoinsForTable(tableName: string) {
   return KNOWN_JOINS[tableName] || [];
 }
 
+// Auto-parse: converte nomes de colunas em descricoes legiveis em portugues
+const KNOWN_TERMS: Record<string, string> = {
+  id: "ID",
+  uuid: "UUID",
+  created_at: "Data de Criação",
+  updated_at: "Última Atualização",
+  deleted_at: "Data de Exclusão",
+  lead_id: "ID do Lead",
+  cliente_id: "ID do Cliente",
+  compra_id: "ID da Compra",
+  vendedor_id: "ID do Vendedor",
+  nome: "Nome",
+  email: "E-mail",
+  telefone: "Telefone",
+  endereco: "Endereço",
+  cpf: "CPF",
+  cnpj: "CNPJ",
+  cep: "CEP",
+  url: "URL",
+  wpp: "WhatsApp",
+  mgs: "MGS",
+  sgc: "SGC",
+  fk: "Chave Estrangeira",
+};
+
+const TERM_FRAGMENTS: Record<string, string> = {
+  celebridade: "Celebridade",
+  vendedor: "Vendedor",
+  responsavel: "Responsável",
+  etapa: "Etapa",
+  funil: "Funil",
+  segmento: "Segmento",
+  subsegmento: "Subsegmento",
+  negocio: "Negócio",
+  agencia: "Agência",
+  classificacao: "Classificação",
+  engajamento: "Engajamento",
+  agendamento: "Agendamento",
+  atuacao: "Atuação",
+  empresarial: "Empresarial",
+  contato: "Contato",
+  canal: "Canal",
+  setor: "Setor",
+  tipo: "Tipo",
+  status: "Status",
+  data: "Data",
+  valor: "Valor",
+  total: "Total",
+  quantidade: "Quantidade",
+  descricao: "Descrição",
+  observacao: "Observação",
+  motivo: "Motivo",
+  origem: "Origem",
+  destino: "Destino",
+  anterior: "Anterior",
+  posterior: "Posterior",
+  proximo: "Próximo",
+  fechamento: "Fechamento",
+  abertura: "Abertura",
+  inicio: "Início",
+  fim: "Fim",
+  ativo: "Ativo",
+  bloqueio: "Bloqueio",
+  proposta: "Proposta",
+  imagem: "Imagem",
+  pack: "Pack",
+  promocional: "Promocional",
+  producao: "Produção",
+  nota: "Nota",
+  fiscal: "Fiscal",
+  recorrencia: "Recorrência",
+  parcela: "Parcela",
+  pagamento: "Pagamento",
+  checkout: "Checkout",
+  meta: "Meta",
+  grupo: "Grupo",
+  mes: "Mês",
+  ano: "Ano",
+  lead: "Lead",
+  cliente: "Cliente",
+  compra: "Compra",
+  produto: "Produto",
+  preco: "Preço",
+  desejada: "Desejada",
+  historico: "Histórico",
+  anotacao: "Anotação",
+  mensagem: "Mensagem",
+  chat: "Chat",
+  session: "Sessão",
+  list: "Lista",
+  task: "Tarefa",
+  creator: "Criador",
+  member: "Membro",
+  client: "Cliente",
+  name: "Nome",
+  title: "Título",
+  order: "Ordem",
+  position: "Posição",
+  color: "Cor",
+  icon: "Ícone",
+  is: "É",
+  has: "Tem",
+  can: "Pode",
+  allow: "Permite",
+  enable: "Habilita",
+  active: "Ativo",
+  visible: "Visível",
+  deleted: "Excluído",
+  archived: "Arquivado",
+};
+
+function splitColumnName(name: string): string[] {
+  // Split camelCase: "vendedorResponsavel" → ["vendedor", "Responsavel"]
+  const camelSplit = name.replace(/([a-z])([A-Z])/g, "$1_$2");
+  // Split snake_case and lowercase
+  return camelSplit.split("_").filter(Boolean).map((s) => s.toLowerCase());
+}
+
+export function getColumnDescription(columnName: string): string {
+  // Check exact match first
+  const exactMatch = KNOWN_TERMS[columnName.toLowerCase()];
+  if (exactMatch) return exactMatch;
+
+  const parts = splitColumnName(columnName);
+
+  // Check if full joined name matches a known term
+  const joined = parts.join("_");
+  const joinedMatch = KNOWN_TERMS[joined];
+  if (joinedMatch) return joinedMatch;
+
+  // Map each part to its known fragment or capitalize
+  const mapped = parts
+    .filter((p) => p !== "id" || parts.length === 1)
+    .map((part) => {
+      const fragment = TERM_FRAGMENTS[part];
+      if (fragment) return fragment;
+      // Capitalize first letter
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    });
+
+  // If last part is "id", append "(ID)"
+  if (parts.length > 1 && parts[parts.length - 1] === "id") {
+    return mapped.join(" ") + " (ID)";
+  }
+
+  return mapped.join(" ");
+}
+
 // Colunas FK que tem lookup por nome (coluna -> { tabela, campoNome })
 export const FK_LOOKUPS: Record<string, Record<string, { table: string; nameField: string }>> = {
   leads: {

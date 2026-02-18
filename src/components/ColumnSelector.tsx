@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { Columns3, Search, Check } from "lucide-react";
 import type { ColumnMeta } from "@/lib/types";
+import { getColumnDescription } from "@/lib/schema";
 
 interface TooltipState {
   col: ColumnMeta;
@@ -137,7 +138,8 @@ export default function ColumnSelector({
           }}
         >
           <dl className="m-0">
-            <dt className="text-[10px] uppercase tracking-wider" style={{ color: "var(--md-outline-variant)" }}>Coluna</dt>
+            <dd className="m-0 text-[12px] font-medium" style={{ color: "#fff" }}>{getColumnDescription(tooltip.col.name)}</dd>
+            <dt className="text-[10px] uppercase tracking-wider mt-1.5" style={{ color: "var(--md-outline-variant)" }}>Coluna</dt>
             <dd className="m-0 font-mono text-[11px]">{tooltip.col.name}</dd>
             <dt className="text-[10px] uppercase tracking-wider mt-1" style={{ color: "var(--md-outline-variant)" }}>Tipo</dt>
             <dd className="m-0 font-mono text-[11px]">{tooltip.col.data_type}</dd>
