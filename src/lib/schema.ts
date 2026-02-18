@@ -295,6 +295,8 @@ export const FK_LOOKUPS: Record<string, Record<string, { table: string; nameFiel
   leads: {
     etapa: { table: "etapa", nameField: "name" },
     funil: { table: "funil", nameField: "nome" },
+    funilVendedor: { table: "funil", nameField: "nome" },
+    etapaVendedorFunil: { table: "etapa", nameField: "name" },
   },
   compras: {},
   bloqueiosCelebridades: {},
