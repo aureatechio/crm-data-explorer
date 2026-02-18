@@ -111,6 +111,11 @@ export async function executeQuery(state: QueryState): Promise<QueryResult> {
       .from(state.table)
       .select(selectStr, { count: "exact" });
 
+    // Fixed filter: leads only show novo_crm = true
+    if (state.table === "leads") {
+      query = query.eq("novo_crm", true);
+    }
+
     // Apply filters
     for (const filter of state.filters) {
       if (!filter.column || !filter.operator) continue;
@@ -209,6 +214,11 @@ export async function fetchAllForExport(state: QueryState): Promise<QueryResult>
     let query = supabase
       .from(state.table)
       .select(selectStr, { count: "exact" });
+
+    // Fixed filter: leads only show novo_crm = true
+    if (state.table === "leads") {
+      query = query.eq("novo_crm", true);
+    }
 
     for (const filter of state.filters) {
       if (!filter.column || !filter.operator) continue;
