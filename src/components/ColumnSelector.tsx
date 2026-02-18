@@ -124,32 +124,20 @@ export default function ColumnSelector({
         })}
       </div>
 
-      {/* Tooltip fixed - escapa do overflow-hidden */}
+      {/* Tooltip */}
       {tooltip && (
         <div
-          className="fixed z-[9999] min-w-[160px] max-w-[240px] px-3 py-2 rounded-lg pointer-events-none animate-fade-in"
+          className="fixed z-[9999] px-3 py-1.5 rounded-full pointer-events-none animate-fade-in text-[11px] font-medium whitespace-nowrap"
           style={{
             left: tooltip.x,
             top: tooltip.y,
             transform: "translateY(-50%)",
             background: "var(--md-on-surface)",
-            color: "var(--md-surface)",
-            boxShadow: "var(--md-elevation-2)",
+            color: "#fff",
+            boxShadow: "0 2px 8px rgba(0,0,0,.15)",
           }}
         >
-          <dl className="m-0">
-            <dd className="m-0 text-[12px] font-medium" style={{ color: "#fff" }}>{getColumnDescription(tooltip.col.name)}</dd>
-            <dt className="text-[10px] uppercase tracking-wider mt-1.5" style={{ color: "var(--md-outline-variant)" }}>Coluna</dt>
-            <dd className="m-0 font-mono text-[11px]">{tooltip.col.name}</dd>
-            <dt className="text-[10px] uppercase tracking-wider mt-1" style={{ color: "var(--md-outline-variant)" }}>Tipo</dt>
-            <dd className="m-0 font-mono text-[11px]">{tooltip.col.data_type}</dd>
-            {tooltip.col.format && tooltip.col.format !== tooltip.col.data_type && (
-              <>
-                <dt className="text-[10px] uppercase tracking-wider mt-1" style={{ color: "var(--md-outline-variant)" }}>Formato</dt>
-                <dd className="m-0 font-mono text-[11px]">{tooltip.col.format}</dd>
-              </>
-            )}
-          </dl>
+          {getColumnDescription(tooltip.col.name)}
         </div>
       )}
     </div>
