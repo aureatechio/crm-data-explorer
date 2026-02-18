@@ -27,14 +27,18 @@ function flattenRow(row: Record<string, unknown>, prefix = ""): Record<string, u
 
 export default function ExportButton({ queryState, disabled }: ExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
 
   const doExport = async (format: "csv" | "xlsx") => {
     setIsExporting(true);
+    setExportProgress(0);
     setShowMenu(false);
 
     try {
-      const result = await fetchAllForExport(queryState);
+      const result = await fetchAllForExport(queryState, (loaded) => {
+        setExportProgress(loaded);
+      });
 
       if (result.error) {
         alert(`Erro na exportacao: ${result.error}`);
@@ -82,7 +86,7 @@ export default function ExportButton({ queryState, disabled }: ExportButtonProps
         {isExporting ? (
           <>
             <div className="w-4 h-4 border-2 border-[var(--md-primary)] border-t-transparent rounded-full animate-spin" />
-            Exportando...
+            {exportProgress > 0 ? `${exportProgress.toLocaleString()} linhas...` : "Exportando..."}
           </>
         ) : (
           <>

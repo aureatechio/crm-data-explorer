@@ -197,7 +197,10 @@ export async function executeQuery(state: QueryState): Promise<QueryResult> {
   }
 }
 
-export async function fetchAllForExport(state: QueryState): Promise<QueryResult> {
+export async function fetchAllForExport(
+  state: QueryState,
+  onProgress?: (loaded: number) => void
+): Promise<QueryResult> {
   const start = performance.now();
 
   try {
@@ -211,49 +214,60 @@ export async function fetchAllForExport(state: QueryState): Promise<QueryResult>
       selectStr = [selectStr, ...joinSelects].join(",");
     }
 
-    let query = supabase
-      .from(state.table)
-      .select(selectStr, { count: "exact" });
+    const buildQuery = () => {
+      let query = supabase
+        .from(state.table)
+        .select(selectStr);
 
-    // Fixed filter: leads only show novo_crm = true
-    if (state.table === "leads") {
-      query = query.eq("novo_crm", true);
-    }
-
-    for (const filter of state.filters) {
-      if (!filter.column || !filter.operator) continue;
-      switch (filter.operator) {
-        case "eq": query = query.eq(filter.column, filter.value); break;
-        case "neq": query = query.neq(filter.column, filter.value); break;
-        case "gt": query = query.gt(filter.column, filter.value); break;
-        case "gte": query = query.gte(filter.column, filter.value); break;
-        case "lt": query = query.lt(filter.column, filter.value); break;
-        case "lte": query = query.lte(filter.column, filter.value); break;
-        case "like": query = query.like(filter.column, `%${filter.value}%`); break;
-        case "ilike": query = query.ilike(filter.column, `%${filter.value}%`); break;
-        case "is_null": query = query.is(filter.column, null); break;
-        case "is_not_null": query = query.not(filter.column, "is", null); break;
-        case "in": query = query.in(filter.column, filter.value.split(",").map((v) => v.trim())); break;
+      if (state.table === "leads") {
+        query = query.eq("novo_crm", true);
       }
-    }
 
-    if (state.orderBy) {
-      query = query.order(state.orderBy, { ascending: state.orderDirection === "asc" });
-    }
+      for (const filter of state.filters) {
+        if (!filter.column || !filter.operator) continue;
+        switch (filter.operator) {
+          case "eq": query = query.eq(filter.column, filter.value); break;
+          case "neq": query = query.neq(filter.column, filter.value); break;
+          case "gt": query = query.gt(filter.column, filter.value); break;
+          case "gte": query = query.gte(filter.column, filter.value); break;
+          case "lt": query = query.lt(filter.column, filter.value); break;
+          case "lte": query = query.lte(filter.column, filter.value); break;
+          case "like": query = query.like(filter.column, `%${filter.value}%`); break;
+          case "ilike": query = query.ilike(filter.column, `%${filter.value}%`); break;
+          case "is_null": query = query.is(filter.column, null); break;
+          case "is_not_null": query = query.not(filter.column, "is", null); break;
+          case "in": query = query.in(filter.column, filter.value.split(",").map((v) => v.trim())); break;
+        }
+      }
 
-    // Supabase limits to 1000 rows per request - paginate
+      if (state.orderBy) {
+        query = query.order(state.orderBy, { ascending: state.orderDirection === "asc" });
+      }
+
+      return query;
+    };
+
     const MAX_EXPORT = 10000;
-    const PAGE_SIZE = 1000;
+    let pageSize = 500;
     const allData: Record<string, unknown>[] = [];
 
-    for (let offset = 0; offset < MAX_EXPORT; offset += PAGE_SIZE) {
-      const { data, error } = await query.range(offset, offset + PAGE_SIZE - 1);
+    for (let offset = 0; offset < MAX_EXPORT;) {
+      const query = buildQuery();
+      const { data, error } = await query.range(offset, offset + pageSize - 1);
+
       if (error) {
+        if (error.message.includes("statement timeout") && pageSize > 50) {
+          pageSize = Math.max(50, Math.floor(pageSize / 2));
+          continue; // retry same offset with smaller page
+        }
         return { data: allData, count: allData.length, error: error.message, executionTime: performance.now() - start };
       }
+
       if (!data || data.length === 0) break;
       allData.push(...(data as unknown as Record<string, unknown>[]));
-      if (data.length < PAGE_SIZE) break;
+      onProgress?.(allData.length);
+      if (data.length < pageSize) break;
+      offset += pageSize;
     }
 
     return { data: allData, count: allData.length, error: null, executionTime: performance.now() - start };
