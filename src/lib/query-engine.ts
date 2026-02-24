@@ -10,6 +10,72 @@ export interface LookupOption {
 // Cache de lookups para evitar re-fetch
 const lookupCache: Record<string, LookupOption[]> = {};
 
+// Cache de nomes FK para resolucao no grid (uuid -> nome)
+const fkNameCache: Record<string, Record<string, string>> = {};
+
+/**
+ * Pos-processamento: substitui UUIDs de colunas FK por nomes legiveis.
+ * Usa FK_LOOKUPS para saber quais colunas resolver e de qual tabela buscar.
+ */
+async function resolveFKNames(
+  data: Record<string, unknown>[],
+  tableName: string
+): Promise<Record<string, unknown>[]> {
+  const lookups = FK_LOOKUPS[tableName];
+  if (!lookups || Object.keys(lookups).length === 0 || data.length === 0) return data;
+
+  // Detectar quais colunas com lookup existem nos dados
+  const firstRow = data[0];
+  const columnsToResolve = Object.keys(lookups).filter((col) => col in firstRow);
+  if (columnsToResolve.length === 0) return data;
+
+  for (const col of columnsToResolve) {
+    const lookup = lookups[col];
+    const cacheKey = `${lookup.table}.${lookup.nameField}`;
+
+    if (!fkNameCache[cacheKey]) {
+      fkNameCache[cacheKey] = {};
+    }
+
+    // Coletar UUIDs unicos nao-nulos
+    const ids = [
+      ...new Set(
+        data
+          .map((row) => row[col])
+          .filter((v): v is string => typeof v === "string" && v.length > 0)
+      ),
+    ];
+    if (ids.length === 0) continue;
+
+    // Buscar apenas IDs que nao estao no cache
+    const missingIds = ids.filter((id) => !(id in fkNameCache[cacheKey]));
+
+    if (missingIds.length > 0) {
+      const { data: lookupData } = await supabase
+        .from(lookup.table)
+        .select(`id,${lookup.nameField}`)
+        .in("id", missingIds);
+
+      if (lookupData) {
+        for (const row of lookupData as unknown as Record<string, unknown>[]) {
+          fkNameCache[cacheKey][String(row.id)] = String(row[lookup.nameField] || "");
+        }
+      }
+    }
+
+    // Substituir UUIDs por nomes nos dados
+    data = data.map((row) => {
+      const id = row[col];
+      if (typeof id === "string" && fkNameCache[cacheKey][id]) {
+        return { ...row, [col]: fkNameCache[cacheKey][id] };
+      }
+      return row;
+    });
+  }
+
+  return data;
+}
+
 export async function fetchLookupOptions(tableName: string, column: string): Promise<LookupOption[]> {
   const cacheKey = `${tableName}.${column}`;
   if (lookupCache[cacheKey]) return lookupCache[cacheKey];
@@ -180,8 +246,14 @@ export async function executeQuery(state: QueryState): Promise<QueryResult> {
       return { data: [], count: 0, error: error.message, executionTime };
     }
 
+    // Resolver FKs (ex: UUIDs de vendedores -> nomes)
+    const resolvedData = await resolveFKNames(
+      (data as unknown as Record<string, unknown>[]) || [],
+      state.table
+    );
+
     return {
-      data: (data as unknown as Record<string, unknown>[]) || [],
+      data: resolvedData,
       count: count || 0,
       error: null,
       executionTime,
@@ -270,7 +342,9 @@ export async function fetchAllForExport(
       offset += pageSize;
     }
 
-    return { data: allData, count: allData.length, error: null, executionTime: performance.now() - start };
+    // Resolver FKs para export tambem
+    const resolvedData = await resolveFKNames(allData, state.table);
+    return { data: resolvedData, count: resolvedData.length, error: null, executionTime: performance.now() - start };
   } catch (err) {
     return {
       data: [],
