@@ -79,6 +79,7 @@ export default function FilterPanel({
         </button>
       </div>
 
+      <div className="overflow-y-auto min-h-0 space-y-2">
       {filters.map((filter) => {
         const col = columns.find((c) => c.name === filter.column);
         const isLookup = hasLookup(tableName, filter.column);
@@ -152,6 +153,7 @@ export default function FilterPanel({
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
