@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 import type { QueryState, QueryResult, ColumnMeta } from "./types";
-import { FK_LOOKUPS } from "./schema";
+import { FK_LOOKUPS, TEXT_COMPANIONS } from "./schema";
 
 export interface LookupOption {
   id: string;
@@ -70,6 +70,28 @@ async function resolveFKNames(
         return { ...row, [col]: fkNameCache[cacheKey][id] };
       }
       return row;
+    });
+  }
+
+  // Fallback: para UUIDs nao resolvidos, usar campo companion *text se disponivel
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const companions = TEXT_COMPANIONS[tableName];
+  if (companions && Object.keys(companions).length > 0) {
+    data = data.map((row) => {
+      const updated = { ...row };
+      for (const [col, textCol] of Object.entries(companions)) {
+        const val = updated[col];
+        if (
+          typeof val === "string" &&
+          UUID_REGEX.test(val) &&
+          textCol in updated &&
+          updated[textCol] != null &&
+          String(updated[textCol]).length > 0
+        ) {
+          updated[col] = updated[textCol];
+        }
+      }
+      return updated;
     });
   }
 

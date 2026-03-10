@@ -298,9 +298,43 @@ export const FK_LOOKUPS: Record<string, Record<string, { table: string; nameFiel
     funilVendedor: { table: "funil", nameField: "nome" },
     etapaVendedorFunil: { table: "etapa", nameField: "name" },
     vendedorResponsavel: { table: "vendedores", nameField: "nome" },
+    segmento: { table: "segmentos", nameField: "nome" },
+    subsegmento: { table: "subsegmento", nameField: "nome" },
+    negocio: { table: "negocio", nameField: "nome" },
+    celebridadeDesejada: { table: "celebridadesReferencia", nameField: "nome" },
+    agenciavendas: { table: "agenciavendas", nameField: "nome" },
+    agencia: { table: "agenciavendas", nameField: "nome" },
+    bot: { table: "celularesBot", nameField: "nome" },
   },
   compras: {
     vendedoresponsavel: { table: "vendedores", nameField: "nome" },
+    segmento: { table: "segmentos", nameField: "nome" },
+    subsegmento: { table: "subsegmento", nameField: "nome" },
+    celebridade: { table: "celebridadesReferencia", nameField: "nome" },
+    classificacao_id: { table: "cliente_classificacao", nameField: "nome" },
   },
-  bloqueiosCelebridades: {},
+  bloqueiosCelebridades: {
+    celebridade: { table: "celebridadesReferencia", nameField: "nome" },
+    subsegmento_id: { table: "subsegmento", nameField: "nome" },
+    negocio_id: { table: "negocio", nameField: "nome" },
+    segmento_id: { table: "segmentos", nameField: "nome" },
+  },
+};
+
+// Campos com coluna companion "*text" que servem de fallback quando o UUID
+// nao existe na tabela FK (ex: agencia -> agenciatext)
+export const TEXT_COMPANIONS: Record<string, Record<string, string>> = {
+  leads: {
+    agencia: "agenciatext",
+    segmento: "segmentotext",
+    subsegmento: "subsegmentotext",
+    negocio: "negociotext",
+    segmento_mgs_id: "segmento_mgs_text",
+  },
+  compras: {},
+  bloqueiosCelebridades: {
+    segmento_id: "segmento_nome",
+    subsegmento_id: "subsegmento_nome",
+    negocio_id: "negocio_nome",
+  },
 };
