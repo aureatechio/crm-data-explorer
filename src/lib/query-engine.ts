@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 import type { QueryState, QueryResult, ColumnMeta } from "./types";
-import { FK_LOOKUPS, TEXT_COMPANIONS } from "./schema";
+import { FK_LOOKUPS, TEXT_COMPANIONS, getSyntheticColumns } from "./schema";
 
 export interface LookupOption {
   id: string;
@@ -10,12 +10,14 @@ export interface LookupOption {
 // Cache de lookups para evitar re-fetch
 const lookupCache: Record<string, LookupOption[]> = {};
 
-// Cache de nomes FK para resolucao no grid (uuid -> nome)
-const fkNameCache: Record<string, Record<string, string>> = {};
+// Cache de linhas FK (tabela -> uuid -> { campo: valor }) usado para resolver
+// nomes e campos extras (ex.: agencia da celebridade) sem re-fetch.
+const fkRowCache: Record<string, Record<string, Record<string, string>>> = {};
 
 /**
- * Pos-processamento: substitui UUIDs de colunas FK por nomes legiveis.
- * Usa FK_LOOKUPS para saber quais colunas resolver e de qual tabela buscar.
+ * Pos-processamento: substitui UUIDs de colunas FK por nomes legiveis e
+ * injeta, quando configurado, campos extras da tabela FK como novas colunas
+ * virtuais (ex.: `celebridade_agencia`).
  */
 async function resolveFKNames(
   data: Record<string, unknown>[],
@@ -31,11 +33,13 @@ async function resolveFKNames(
 
   for (const col of columnsToResolve) {
     const lookup = lookups[col];
-    const cacheKey = `${lookup.table}.${lookup.nameField}`;
+    const extraFields = lookup.extraFields ?? [];
+    const fieldsToFetch = [lookup.nameField, ...extraFields.map((e) => e.source)];
 
-    if (!fkNameCache[cacheKey]) {
-      fkNameCache[cacheKey] = {};
+    if (!fkRowCache[lookup.table]) {
+      fkRowCache[lookup.table] = {};
     }
+    const tableCache = fkRowCache[lookup.table];
 
     // Coletar UUIDs unicos nao-nulos
     const ids = [
@@ -45,31 +49,52 @@ async function resolveFKNames(
           .filter((v): v is string => typeof v === "string" && v.length > 0)
       ),
     ];
-    if (ids.length === 0) continue;
 
-    // Buscar apenas IDs que nao estao no cache
-    const missingIds = ids.filter((id) => !(id in fkNameCache[cacheKey]));
+    // Buscar apenas IDs que nao tem todos os campos necessarios no cache
+    const missingIds = ids.filter(
+      (id) => !tableCache[id] || fieldsToFetch.some((f) => !(f in tableCache[id]))
+    );
 
     if (missingIds.length > 0) {
       const { data: lookupData } = await supabase
         .from(lookup.table)
-        .select(`id,${lookup.nameField}`)
+        .select(`id,${fieldsToFetch.join(",")}`)
         .in("id", missingIds);
 
       if (lookupData) {
         for (const row of lookupData as unknown as Record<string, unknown>[]) {
-          fkNameCache[cacheKey][String(row.id)] = String(row[lookup.nameField] || "");
+          const id = String(row.id);
+          if (!tableCache[id]) tableCache[id] = {};
+          for (const field of fieldsToFetch) {
+            const val = row[field];
+            tableCache[id][field] = val == null ? "" : String(val);
+          }
         }
       }
     }
 
-    // Substituir UUIDs por nomes nos dados
+    // Substituir UUIDs por nomes e injetar campos extras como novas colunas
     data = data.map((row) => {
       const id = row[col];
-      if (typeof id === "string" && fkNameCache[cacheKey][id]) {
-        return { ...row, [col]: fkNameCache[cacheKey][id] };
+      const updated: Record<string, unknown> = { ...row };
+
+      if (typeof id === "string" && tableCache[id]) {
+        const cached = tableCache[id];
+        if (cached[lookup.nameField]) {
+          updated[col] = cached[lookup.nameField];
+        }
+        for (const extra of extraFields) {
+          updated[extra.target] = cached[extra.source] || null;
+        }
+      } else {
+        // Garante presenca das colunas sinteticas mesmo quando o UUID nao resolve,
+        // para o DataGrid exibir o cabecalho consistentemente.
+        for (const extra of extraFields) {
+          if (!(extra.target in updated)) updated[extra.target] = null;
+        }
       }
-      return row;
+
+      return updated;
     });
   }
 
@@ -127,6 +152,8 @@ export function hasLookup(tableName: string, column: string): boolean {
 }
 
 export async function fetchTableColumns(tableName: string): Promise<ColumnMeta[]> {
+  const synthetic = getSyntheticColumns(tableName);
+
   const { data, error } = await supabase.from(tableName).select("*").limit(0);
 
   if (error) {
@@ -136,30 +163,32 @@ export async function fetchTableColumns(tableName: string): Promise<ColumnMeta[]
       .select("*");
 
     if (cols && Array.isArray(cols)) {
-      return cols.map((c: Record<string, string>) => ({
+      const real = cols.map((c: Record<string, string>) => ({
         name: c.column_name,
         data_type: c.data_type,
         format: c.udt_name || c.data_type,
       }));
+      return [...real, ...synthetic];
     }
-    return [];
+    return synthetic;
   }
 
   // If select works, we can infer columns from the response metadata
   // But for empty results, we need the column names from elsewhere
   // Supabase doesn't return column metadata directly, so we try a different approach
   if (data && data.length > 0) {
-    return Object.keys(data[0]).map((name) => ({
+    const real = Object.keys(data[0]).map((name) => ({
       name,
       data_type: typeof data[0][name] === "number" ? "numeric" : "text",
       format: "text",
     }));
+    return [...real, ...synthetic];
   }
 
   // Try to get one row to discover columns
   const { data: sample } = await supabase.from(tableName).select("*").limit(1);
   if (sample && sample.length > 0) {
-    return Object.keys(sample[0]).map((name) => {
+    const real = Object.keys(sample[0]).map((name) => {
       const val = sample[0][name];
       let dataType = "text";
       if (typeof val === "number") dataType = "numeric";
@@ -168,20 +197,52 @@ export async function fetchTableColumns(tableName: string): Promise<ColumnMeta[]
       else if (val && typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}/.test(val)) dataType = "uuid";
       return { name, data_type: dataType, format: dataType };
     });
+    return [...real, ...synthetic];
   }
 
-  return [];
+  return synthetic;
+}
+
+// Dada uma lista de colunas selecionadas pelo usuario, separa as colunas reais
+// (que vao para o select do banco) das sinteticas (injetadas pos-query).
+// Se uma sintetica foi selecionada, garante que sua FK base seja incluida na
+// query para permitir a resolucao.
+function splitSelectedColumns(
+  tableName: string,
+  selected: string[]
+): { dbColumns: string[]; syntheticColumns: Set<string> } {
+  const lookups = FK_LOOKUPS[tableName] ?? {};
+  const syntheticToBase: Record<string, string> = {};
+  for (const [baseCol, lookup] of Object.entries(lookups)) {
+    for (const extra of lookup.extraFields ?? []) {
+      syntheticToBase[extra.target] = baseCol;
+    }
+  }
+
+  const dbColumns: string[] = [];
+  const syntheticColumns = new Set<string>();
+  for (const col of selected) {
+    const baseCol = syntheticToBase[col];
+    if (baseCol) {
+      syntheticColumns.add(col);
+      if (!dbColumns.includes(baseCol)) dbColumns.push(baseCol);
+    } else if (!dbColumns.includes(col)) {
+      dbColumns.push(col);
+    }
+  }
+  return { dbColumns, syntheticColumns };
 }
 
 export async function executeQuery(state: QueryState): Promise<QueryResult> {
   const start = performance.now();
 
   try {
-    // Build select string
+    // Build select string (strip colunas sinteticas, incluir base col das FKs)
+    const { dbColumns } = splitSelectedColumns(state.table, state.selectedColumns);
     let selectStr = "*";
-    if (state.selectedColumns.length > 0) {
+    if (dbColumns.length > 0) {
       // Include join columns
-      const mainCols = state.selectedColumns.join(",");
+      const mainCols = dbColumns.join(",");
       const joinSelects = state.joins.map((j) => {
         const cols = j.selectedColumns.length > 0 ? j.selectedColumns.join(",") : "*";
         return `${j.toTable}!${j.fromColumn}(${cols})`;
@@ -298,7 +359,8 @@ export async function fetchAllForExport(
   const start = performance.now();
 
   try {
-    let selectStr = state.selectedColumns.length > 0 ? state.selectedColumns.join(",") : "*";
+    const { dbColumns } = splitSelectedColumns(state.table, state.selectedColumns);
+    let selectStr = dbColumns.length > 0 ? dbColumns.join(",") : "*";
 
     if (state.joins.length > 0) {
       const joinSelects = state.joins.map((j) => {

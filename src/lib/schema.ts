@@ -165,6 +165,8 @@ const KNOWN_TERMS: Record<string, string> = {
   mgs: "MGS",
   sgc: "SGC",
   fk: "Chave Estrangeira",
+  imagemproposta_id: "Número da Proposta",
+  celebridade_agencia: "Agência da Celebridade",
 };
 
 const TERM_FRAGMENTS: Record<string, string> = {
@@ -290,8 +292,19 @@ export function getColumnDescription(columnName: string): string {
   return mapped.join(" ");
 }
 
+// Descritor de lookup FK: resolve UUID -> nome e, opcionalmente, expoe
+// campos adicionais da tabela FK como novas colunas virtuais no grid.
+export interface FKLookup {
+  table: string;
+  nameField: string;
+  // Campos extras da tabela FK que viram colunas adicionais no resultado.
+  // source = nome do campo na tabela FK; target = nome da coluna que sera
+  // injetada em cada linha (ex.: "celebridade_agencia").
+  extraFields?: Array<{ source: string; target: string }>;
+}
+
 // Colunas FK que tem lookup por nome (coluna -> { tabela, campoNome })
-export const FK_LOOKUPS: Record<string, Record<string, { table: string; nameField: string }>> = {
+export const FK_LOOKUPS: Record<string, Record<string, FKLookup>> = {
   leads: {
     etapa: { table: "etapa", nameField: "name" },
     funil: { table: "funil", nameField: "nome" },
@@ -310,7 +323,11 @@ export const FK_LOOKUPS: Record<string, Record<string, { table: string; nameFiel
     vendedoresponsavel: { table: "vendedores", nameField: "nome" },
     segmento: { table: "segmentos", nameField: "nome" },
     subsegmento: { table: "subsegmento", nameField: "nome" },
-    celebridade: { table: "celebridadesReferencia", nameField: "nome" },
+    celebridade: {
+      table: "celebridadesReferencia",
+      nameField: "nome",
+      extraFields: [{ source: "agencia", target: "celebridade_agencia" }],
+    },
     classificacao_id: { table: "cliente_classificacao", nameField: "nome" },
   },
   bloqueiosCelebridades: {
@@ -320,6 +337,21 @@ export const FK_LOOKUPS: Record<string, Record<string, { table: string; nameFiel
     segmento_id: { table: "segmentos", nameField: "nome" },
   },
 };
+
+// Colunas virtuais (nao existentes no banco) injetadas via extraFields de FK_LOOKUPS.
+// Retorna as colunas sinteticas de uma tabela para aparecerem no ColumnSelector.
+export function getSyntheticColumns(tableName: string): Array<{ name: string; data_type: string; format: string }> {
+  const lookups = FK_LOOKUPS[tableName];
+  if (!lookups) return [];
+  const synthetic: Array<{ name: string; data_type: string; format: string }> = [];
+  for (const lookup of Object.values(lookups)) {
+    if (!lookup.extraFields) continue;
+    for (const extra of lookup.extraFields) {
+      synthetic.push({ name: extra.target, data_type: "text", format: "text" });
+    }
+  }
+  return synthetic;
+}
 
 // Campos com coluna companion "*text" que servem de fallback quando o UUID
 // nao existe na tabela FK (ex: agencia -> agenciatext)
