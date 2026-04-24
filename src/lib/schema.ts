@@ -166,7 +166,7 @@ const KNOWN_TERMS: Record<string, string> = {
   sgc: "SGC",
   fk: "Chave Estrangeira",
   imagemproposta_id: "Número da Proposta",
-  celebridade_agencia: "Agência da Celebridade",
+  lead_agencia: "Agência (via Lead)",
 };
 
 const TERM_FRAGMENTS: Record<string, string> = {
@@ -292,15 +292,23 @@ export function getColumnDescription(columnName: string): string {
   return mapped.join(" ");
 }
 
-// Descritor de lookup FK: resolve UUID -> nome e, opcionalmente, expoe
+// Descritor de lookup FK: opcionalmente substitui UUID -> nome e expoe
 // campos adicionais da tabela FK como novas colunas virtuais no grid.
 export interface FKLookup {
   table: string;
-  nameField: string;
+  // Coluna na tabela FK que casa com o valor da coluna local (default: "id").
+  foreignColumn?: string;
+  // Se definido, substitui o valor da coluna local pelo valor deste campo.
+  nameField?: string;
   // Campos extras da tabela FK que viram colunas adicionais no resultado.
-  // source = nome do campo na tabela FK; target = nome da coluna que sera
-  // injetada em cada linha (ex.: "celebridade_agencia").
-  extraFields?: Array<{ source: string; target: string }>;
+  // `resolve` permite um segundo hop: se `source` e um UUID, resolve para
+  // um nome em outra tabela. `textFallback` e usado quando o UUID nao resolve.
+  extraFields?: Array<{
+    source: string;
+    target: string;
+    resolve?: { table: string; nameField: string };
+    textFallback?: string;
+  }>;
 }
 
 // Colunas FK que tem lookup por nome (coluna -> { tabela, campoNome })
@@ -325,6 +333,22 @@ export const FK_LOOKUPS: Record<string, Record<string, FKLookup>> = {
     subsegmento: { table: "subsegmento", nameField: "nome" },
     celebridade: { table: "celebridadesReferencia", nameField: "nome" },
     classificacao_id: { table: "cliente_classificacao", nameField: "nome" },
+    // Join compras -> leads (por lead_id) para trazer a agencia do lead.
+    // Mantem leadid intacto (nameField omitido) e injeta lead_agencia
+    // resolvendo leads.agenciavendas -> agenciavendas.nome, com fallback
+    // para leads.agenciatext quando o UUID nao existe.
+    leadid: {
+      table: "leads",
+      foreignColumn: "lead_id",
+      extraFields: [
+        {
+          source: "agenciavendas",
+          target: "lead_agencia",
+          resolve: { table: "agenciavendas", nameField: "nome" },
+          textFallback: "agenciatext",
+        },
+      ],
+    },
   },
   bloqueiosCelebridades: {
     celebridade: { table: "celebridadesReferencia", nameField: "nome" },

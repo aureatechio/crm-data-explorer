@@ -17,7 +17,7 @@ const fkRowCache: Record<string, Record<string, Record<string, string>>> = {};
 /**
  * Pos-processamento: substitui UUIDs de colunas FK por nomes legiveis e
  * injeta, quando configurado, campos extras da tabela FK como novas colunas
- * virtuais (ex.: `celebridade_agencia`).
+ * virtuais (ex.: `lead_agencia` via compras -> leads -> agenciavendas).
  */
 async function resolveFKNames(
   data: Record<string, unknown>[],
@@ -34,14 +34,23 @@ async function resolveFKNames(
   for (const col of columnsToResolve) {
     const lookup = lookups[col];
     const extraFields = lookup.extraFields ?? [];
-    const fieldsToFetch = [lookup.nameField, ...extraFields.map((e) => e.source)];
+    const foreignCol = lookup.foreignColumn ?? "id";
 
-    if (!fkRowCache[lookup.table]) {
-      fkRowCache[lookup.table] = {};
-    }
+    // Campos a puxar da tabela FK: chave de juncao + nameField (se houver)
+    // + sources e textFallbacks de cada extraField.
+    const fieldsToFetch = Array.from(
+      new Set([
+        foreignCol,
+        ...(lookup.nameField ? [lookup.nameField] : []),
+        ...extraFields.map((e) => e.source),
+        ...extraFields.flatMap((e) => (e.textFallback ? [e.textFallback] : [])),
+      ])
+    );
+
+    if (!fkRowCache[lookup.table]) fkRowCache[lookup.table] = {};
     const tableCache = fkRowCache[lookup.table];
 
-    // Coletar UUIDs unicos nao-nulos
+    // Coletar IDs unicos nao-nulos da coluna local
     const ids = [
       ...new Set(
         data
@@ -51,47 +60,92 @@ async function resolveFKNames(
     ];
 
     // Buscar apenas IDs que nao tem todos os campos necessarios no cache
+    const cachedFields = fieldsToFetch.filter((f) => f !== foreignCol);
     const missingIds = ids.filter(
-      (id) => !tableCache[id] || fieldsToFetch.some((f) => !(f in tableCache[id]))
+      (id) => !tableCache[id] || cachedFields.some((f) => !(f in tableCache[id]))
     );
 
     if (missingIds.length > 0) {
       const { data: lookupData } = await supabase
         .from(lookup.table)
-        .select(`id,${fieldsToFetch.join(",")}`)
-        .in("id", missingIds);
+        .select(fieldsToFetch.join(","))
+        .in(foreignCol, missingIds);
 
       if (lookupData) {
         for (const row of lookupData as unknown as Record<string, unknown>[]) {
-          const id = String(row.id);
-          if (!tableCache[id]) tableCache[id] = {};
-          for (const field of fieldsToFetch) {
+          const key = String(row[foreignCol] ?? "");
+          if (!key) continue;
+          if (!tableCache[key]) tableCache[key] = {};
+          for (const field of cachedFields) {
             const val = row[field];
-            tableCache[id][field] = val == null ? "" : String(val);
+            tableCache[key][field] = val == null ? "" : String(val);
           }
         }
       }
     }
 
-    // Substituir UUIDs por nomes e injetar campos extras como novas colunas
+    // Segundo hop: resolver extraFields.resolve (ex.: leads.agenciavendas -> agenciavendas.nome)
+    for (const extra of extraFields) {
+      if (!extra.resolve) continue;
+      const nestedTable = extra.resolve.table;
+      const nestedField = extra.resolve.nameField;
+      if (!fkRowCache[nestedTable]) fkRowCache[nestedTable] = {};
+      const nestedCache = fkRowCache[nestedTable];
+
+      const nestedIds = Array.from(
+        new Set(
+          Object.values(tableCache)
+            .map((r) => r[extra.source])
+            .filter((v): v is string => typeof v === "string" && v.length > 0)
+        )
+      );
+      const nestedMissing = nestedIds.filter(
+        (id) => !nestedCache[id] || !(nestedField in nestedCache[id])
+      );
+
+      if (nestedMissing.length > 0) {
+        const { data: nestedData } = await supabase
+          .from(nestedTable)
+          .select(`id,${nestedField}`)
+          .in("id", nestedMissing);
+        if (nestedData) {
+          for (const row of nestedData as unknown as Record<string, unknown>[]) {
+            const id = String(row.id);
+            if (!nestedCache[id]) nestedCache[id] = {};
+            const val = row[nestedField];
+            nestedCache[id][nestedField] = val == null ? "" : String(val);
+          }
+        }
+      }
+    }
+
+    // Substituir UUIDs por nomes (se nameField) e injetar campos extras
     data = data.map((row) => {
       const id = row[col];
       const updated: Record<string, unknown> = { ...row };
+      const cached = typeof id === "string" ? tableCache[id] : undefined;
 
-      if (typeof id === "string" && tableCache[id]) {
-        const cached = tableCache[id];
-        if (cached[lookup.nameField]) {
-          updated[col] = cached[lookup.nameField];
+      if (cached && lookup.nameField && cached[lookup.nameField]) {
+        updated[col] = cached[lookup.nameField];
+      }
+
+      for (const extra of extraFields) {
+        let finalVal: string | null = null;
+        const rawVal = cached?.[extra.source];
+
+        if (extra.resolve && rawVal) {
+          const nested = fkRowCache[extra.resolve.table]?.[rawVal];
+          const resolvedName = nested?.[extra.resolve.nameField];
+          if (resolvedName) finalVal = resolvedName;
+        } else if (rawVal) {
+          finalVal = rawVal;
         }
-        for (const extra of extraFields) {
-          updated[extra.target] = cached[extra.source] || null;
+
+        if (!finalVal && extra.textFallback && cached?.[extra.textFallback]) {
+          finalVal = cached[extra.textFallback];
         }
-      } else {
-        // Garante presenca das colunas sinteticas mesmo quando o UUID nao resolve,
-        // para o DataGrid exibir o cabecalho consistentemente.
-        for (const extra of extraFields) {
-          if (!(extra.target in updated)) updated[extra.target] = null;
-        }
+
+        updated[extra.target] = finalVal;
       }
 
       return updated;
@@ -128,19 +182,20 @@ export async function fetchLookupOptions(tableName: string, column: string): Pro
   if (lookupCache[cacheKey]) return lookupCache[cacheKey];
 
   const lookup = FK_LOOKUPS[tableName]?.[column];
-  if (!lookup) return [];
+  if (!lookup || !lookup.nameField) return [];
+  const nameField = lookup.nameField;
 
   const { data, error } = await supabase
     .from(lookup.table)
-    .select(`id,${lookup.nameField}`)
-    .order(lookup.nameField, { ascending: true });
+    .select(`id,${nameField}`)
+    .order(nameField, { ascending: true });
 
   if (error || !data) return [];
 
   const rows = data as unknown as Record<string, unknown>[];
   const options = rows.map((row) => ({
     id: String(row.id),
-    label: String(row[lookup.nameField] || ""),
+    label: String(row[nameField] || ""),
   }));
 
   lookupCache[cacheKey] = options;
