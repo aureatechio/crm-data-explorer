@@ -323,11 +323,7 @@ export const FK_LOOKUPS: Record<string, Record<string, FKLookup>> = {
     vendedoresponsavel: { table: "vendedores", nameField: "nome" },
     segmento: { table: "segmentos", nameField: "nome" },
     subsegmento: { table: "subsegmento", nameField: "nome" },
-    celebridade: {
-      table: "celebridadesReferencia",
-      nameField: "nome",
-      extraFields: [{ source: "agencia", target: "celebridade_agencia" }],
-    },
+    celebridade: { table: "celebridadesReferencia", nameField: "nome" },
     classificacao_id: { table: "cliente_classificacao", nameField: "nome" },
   },
   bloqueiosCelebridades: {
